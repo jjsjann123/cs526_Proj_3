@@ -441,12 +441,18 @@ BOOST_PYTHON_MODULE(myvolume)
 		PYAPI_METHOD(myOsgVolume, setRotation)
 		PYAPI_METHOD(myOsgVolume, translate)
 		PYAPI_METHOD(myOsgVolume, rotate)
-		PYAPI_METHOD(myOsgVolume, setScale)
+		
 		PYAPI_METHOD(myOsgVolume, activateEffect)
 
 		PYAPI_METHOD(myOsgVolume, setCustomizedProperty)
 		PYAPI_METHOD(myOsgVolume, setClipping)
-		PYAPI_METHOD(myOsgVolume, setTransferFunction)
+		PYAPI_METHOD(myOsgVolume, addTransferPoint)
+		PYAPI_METHOD(myOsgVolume, clearTransferFunction)
+		PYAPI_METHOD(myOsgVolume, setAlphaFunc)
+		PYAPI_METHOD(myOsgVolume, setScale)
+		PYAPI_METHOD(myOsgVolume, setSampleDensity)
+		PYAPI_METHOD(myOsgVolume, setTransparency)
+		PYAPI_METHOD(myOsgVolume, setDirty)
 		;
 		//PYAPI_METHOD(HelloModule, )
 		
@@ -489,6 +495,29 @@ void myOsgVolume::update(const UpdateContext& context)
 {
 }
 
+void myOsgVolume::setArguments()
+{
+	std::cout << "*********************" << std::endl;
+	imageFile = "C:\\AJ\\CS526\\data\\bmp\\"*;
+	std::cout << imageFile << std::endl;
+	_xScale = 1.0;
+	_yScale = 1.0;
+	_zScale = 1.0;
+	_alpha = 0.02;
+	modelForm = new osg::PositionAttitudeTransform();
+	modelForm->setPosition(osg::Vec3(0,0,0));
+}
+
+void myOsgVolume::setAlphaFunc(float alpha)
+{
+	_alpha = alpha;
+	if(_ap)
+	{
+		_ap->setValue(alpha);
+		setDirty();
+	}
+}
+
 void myOsgVolume::setScale( float x, float y, float z)
 {
 	_xScale = x;
@@ -496,55 +525,50 @@ void myOsgVolume::setScale( float x, float y, float z)
 	_zScale = z;
 }
 
-void myOsgVolume::setArguments()
+void myOsgVolume::setSampleDensity(float sd)
 {
-	std::cout << "*********************" << std::endl;
-	imageFile = "D:\\omegalib\\data\\bmp\\*";
-	std::cout << imageFile << std::endl;
-	_xScale = 1.0;
-	_yScale = 1.0;
-	_zScale = 1.0;
-	_alpha = 0.02;
-	modelForm = new osg::PositionAttitudeTransform();
-	modelForm->setPosition(osg::Vec3(-200,-200,-500));
+	_sampleDensity = sd;
+	if(_sd)
+	{
+		_sd->setValue(sd);
+		setDirty();
+	}
 }
 
-void myOsgVolume::setTransferFunction()
+void myOsgVolume::setTransparency(float tp)
 {
-	std::cout << "t1" << std::endl;
-	_tf->clear();
-	std::cout << "t2" << std::endl;
-	_tf->setColor(0.0, osg::Vec4(0.0,1.0,0.0,0.0));
-	std::cout << "t3" << std::endl;
-    _tf->setColor(0.5, osg::Vec4(0.0,1.0,1.0,0.5));
-    _tf->setColor(1.0, osg::Vec4(0.0,0.0,1.0,1.0));
-    std::cout << "t4" << std::endl;
-	_volumeTile->setDirty(true);
-	std::cout << "t5" << std::endl;
+	_transparency = tp;
+	if(_tp)
+	{
+		_tp->setValue(tp);
+		setDirty();
+	}
 }
+
+void myOsgVolume::clearTransferFunction()
+{
+	_tf->clear();
+}
+
+void myOsgVolume::addTransferPoint(float intensity, float r, float g, float b, float alpha)
+{
+	_tf->setColor(intensity, osg::Vec4(r, g, b, alpha));
+}
+
+void myOsgVolume::setDirty()
+{
+	_volumeTile->setDirty(true);
+}
+
 
 void myOsgVolume::setCustomizedProperty()
 {
-	//osgVolume::AlphaFuncProperty* ap = new osgVolume::AlphaFuncProperty(alphaFunc);
-	//osgVolume::SampleDensityProperty* sd = new osgVolume::SampleDensityProperty(0.005);
-	//osgVolume::TransparencyProperty* tp = new osgVolume::TransparencyProperty(1.0);
-	//osgVolume::TransferFunctionProperty* tfp = transferFunction.valid() ? new osgVolume::TransferFunctionProperty(transferFunction.get()) : 0;
-
-	//{
-	//	// Standard
-	//	osgVolume::CompositeProperty* cp = new osgVolume::CompositeProperty;
-	//	cp->addProperty(ap);
-	//	cp->addProperty(sd);
-	//	cp->addProperty(tp);
-	//	if (tfp) cp->addProperty(tfp);
-
-	//	sp->addProperty(cp);
-	//}
 }
 
 void myOsgVolume::setClipping()
 {
 	_volumeTile->setLocator(new osgVolume::Locator(osg::Matrix::translate(0.5, 0, 0)*osg::Matrix::rotate(osg::Quat(0.2, osg::Vec3f(0,1,0)))*osg::Matrix::scale(0.5,0.5,0.5)* (*_matrix)));
+	setDirty();
 }
 
 void myOsgVolume::activateEffect(int index)
@@ -556,12 +580,12 @@ void myOsgVolume::activateEffect(int index)
         case(1):	_effectProperty->setActiveProperty(1); break;
         case(2):	_effectProperty->setActiveProperty(2); break;
         case(3):	_effectProperty->setActiveProperty(3); break;
-		case(4):	break;
+		case(4):	_effectProperty->setActiveProperty(4); break;
 		default:	break;
     }
 	//std::cout << "And: " << _volumeTile->getDirty() << std::endl;
 	//_imageLayer->dirty();
-	_volumeTile->setDirty(true);
+	setDirty();
 
 }
 
@@ -632,19 +656,7 @@ void myOsgVolume::initialize()
 	float yMultiplier = this->_yScale;
 	float zMultiplier = this->_zScale;
 	float alphaFunc = this->_alpha;
-    //float xMultiplier=1.0;
-    //while (arguments.read("--xMultiplier",xMultiplier)) {}
-
-    //float yMultiplier=1.0f;
-    //while (arguments.read("--yMultiplier",yMultiplier)) {}
-
-    //float zMultiplier=1.0f;
-    //while (arguments.read("--zMultiplier",zMultiplier)) {}
-
-
-    //float alphaFunc=0.02f;
-    //while (arguments.read("--alphaFunc",alphaFunc)) {}
-
+    
 	ShadingModel shadingModel = Standard;
 	//ShadingModel shadingModel = Isosurface;
     while(arguments.read("--mip")) shadingModel =  MaximumIntensityProjection;
@@ -1078,20 +1090,18 @@ void myOsgVolume::initialize()
 		osgVolume::SwitchProperty* sp = _effectProperty;
         sp->setActiveProperty(0);
 
-        osgVolume::AlphaFuncProperty* ap = new osgVolume::AlphaFuncProperty(alphaFunc);
-        osgVolume::SampleDensityProperty* sd = new osgVolume::SampleDensityProperty(0.005);
-        osgVolume::SampleDensityWhenMovingProperty* sdwm = sampleDensityWhenMoving!=0.0 ? new osgVolume::SampleDensityWhenMovingProperty(sampleDensityWhenMoving) : 0;
-        osgVolume::TransparencyProperty* tp = new osgVolume::TransparencyProperty(1.0);
-        osgVolume::TransferFunctionProperty* tfp = transferFunction.valid() ? new osgVolume::TransferFunctionProperty(transferFunction.get()) : 0;
-		_tfp = tfp;
-        {
+        _ap = new osgVolume::AlphaFuncProperty(alphaFunc);
+        _sd = new osgVolume::SampleDensityProperty(0.005);
+        _tp = new osgVolume::TransparencyProperty(1.0);
+		_is = new osgVolume::IsoSurfaceProperty(alphaFunc);
+        _tfp = transferFunction.valid() ? new osgVolume::TransferFunctionProperty(transferFunction.get()) : 0;
+		{
             // Standard
             osgVolume::CompositeProperty* cp = new osgVolume::CompositeProperty;
-            cp->addProperty(ap);
-            cp->addProperty(sd);
-            cp->addProperty(tp);
-            if (sdwm) cp->addProperty(sdwm);
-            if (tfp) cp->addProperty(tfp);
+            cp->addProperty(_ap);
+            cp->addProperty(_sd);
+            cp->addProperty(_tp);
+            if (_tfp) cp->addProperty(_tfp);
 
             sp->addProperty(cp);
         }
@@ -1099,12 +1109,11 @@ void myOsgVolume::initialize()
         {
             // Light
             osgVolume::CompositeProperty* cp = new osgVolume::CompositeProperty;
-            cp->addProperty(ap);
-            cp->addProperty(sd);
-            cp->addProperty(tp);
+            cp->addProperty(_ap);
+            cp->addProperty(_sd);
+            cp->addProperty(_tp);
             cp->addProperty(new osgVolume::LightingProperty);
-            if (sdwm) cp->addProperty(sdwm);
-            if (tfp) cp->addProperty(tfp);
+            if (_tfp) cp->addProperty(_tfp);
 
             sp->addProperty(cp);
         }
@@ -1112,11 +1121,10 @@ void myOsgVolume::initialize()
         {
             // Isosurface
             osgVolume::CompositeProperty* cp = new osgVolume::CompositeProperty;
-            cp->addProperty(sd);
-            cp->addProperty(tp);
-            cp->addProperty(new osgVolume::IsoSurfaceProperty(alphaFunc));
-            if (sdwm) cp->addProperty(sdwm);
-            if (tfp) cp->addProperty(tfp);
+            cp->addProperty(_sd);
+            cp->addProperty(_tp);
+            cp->addProperty(_is);
+            if (_tfp) cp->addProperty(_tfp);
 
             sp->addProperty(cp);
         }
@@ -1124,27 +1132,25 @@ void myOsgVolume::initialize()
         {
             // MaximumIntensityProjection
             osgVolume::CompositeProperty* cp = new osgVolume::CompositeProperty;
-            cp->addProperty(ap);
-            cp->addProperty(sd);
-            cp->addProperty(tp);
+            cp->addProperty(_ap);
+            cp->addProperty(_sd);
+            cp->addProperty(_tp);
             cp->addProperty(new osgVolume::MaximumIntensityProjectionProperty);
-            if (sdwm) cp->addProperty(sdwm);
-            if (tfp) cp->addProperty(tfp);
+            if (_tfp) cp->addProperty(_tfp);
 
             sp->addProperty(cp);
         }
 
 		{
             // CustomizedProperty
-            osgVolume::CompositeProperty* cp = new osgVolume::CompositeProperty;
-			cp->addProperty(sd);
-            cp->addProperty(tp);
-			if (tfp) cp->addProperty(tfp);
-			cp->addProperty(ap);
-            cp->addProperty(new osgVolume::MaximumIntensityProjectionProperty);
+            _customProperty = new osgVolume::CompositeProperty;
+			_customProperty->addProperty(_ap);
+            _customProperty->addProperty(_sd);
+            _customProperty->addProperty(_tp);
+			if (_tfp) _customProperty->addProperty(_tfp);
+            _customProperty->addProperty(new osgVolume::MaximumIntensityProjectionProperty);
             
-
-            sp->addProperty(cp);
+			sp->addProperty(_customProperty);
         }
 
         switch(shadingModel)

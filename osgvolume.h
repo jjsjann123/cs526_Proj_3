@@ -43,29 +43,40 @@ public:
 	void activateEffect( int index );
 	
 	void setCustomizedProperty();
-	void setTransferFunction();
+	void addTransferPoint(float intensity, float r, float g, float b, float alpha);
+	void clearTransferFunction();
 	void setClipping();
+
+	void setAlphaFunc(float alpha);
+	void setScale(float x, float y, float z);
+	void setSampleDensity(float sd);
+	void setTransparency(float tp);
+
+	void setDirty();
 	
 	//setup
-	static myOsgVolume* createAndInitialize();
-	void setScale(float x, float y, float z);
+	static myOsgVolume* createAndInitialize(std::string filename, float alpha = 0.02, float fx=0, float fy=0, float fz=0);
 	//virtual void update(const UpdateContext&context);
 
 private:
 	Ref<OsgModule> myOsg;
 	Ref<osg::ClipNode> myClipNode;
-	Ref<osgVolume::SwitchProperty> _effectProperty;
+
 	Ref<osgVolume::VolumeTile> _volumeTile;
 	Ref<osgVolume::ImageLayer> _imageLayer;
 	
 	// property 4 -> osgVolume::AlphaFuncProperty* ap = new osgVolume::AlphaFuncProperty(alphaFunc);
 	// property 5 -> cp->addProperty(new osgVolume::MaximumIntensityProjectionProperty);
 	// property 3 -> osgVolume::TransferFunctionProperty* tfp = transferFunction.valid() ? new osgVolume::TransferFunctionProperty(transferFunction.get()) : 0;
+	Ref<osgVolume::SwitchProperty> _effectProperty;
 	Ref<osgVolume::CompositeProperty> _customProperty;
+	Ref<osgVolume::AlphaFuncProperty> _ap;
+	Ref<osgVolume::IsoSurfaceProperty> _is;
+	Ref<osgVolume::SampleDensityProperty> _sd;
+	Ref<osgVolume::TransparencyProperty> _tp;
 	Ref<osgVolume::TransferFunctionProperty> _tfp;
 	Ref<osg::TransferFunction1D> _tf;
-
-
+	
 	Ref<osg::RefMatrix> _matrix;
 	
 	//Ref<SceneManager> mySceneManager;
@@ -75,6 +86,8 @@ private:
 	float _yScale;
 	float _zScale;
 	float _alpha;
+	float _sampleDensity;
+	float _transparency;
 };
 
 #endif
