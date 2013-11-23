@@ -11,8 +11,7 @@ enum ShadingModel
     Standard,
     Light,
     Isosurface,
-    MaximumIntensityProjection,
-	Customized
+    MaximumIntensityProjection
 };
 
 using namespace omega;
@@ -22,7 +21,13 @@ using namespace omegaOsg;
 class myOsgVolume : public EngineModule
 {
 public:
-	myOsgVolume() : EngineModule("OsgViewer")
+	myOsgVolume(std::string filename, float alpha, float fx, float fy, float fz) 
+		: EngineModule("OsgViewer"),
+		_xScale(fx),
+		_yScale(fy),
+		_zScale(fz),
+		_alpha(alpha),
+		imageFile(filename)
 	{
 		//myOsg = new OsgModule();
 		//ModuleServices::addModule(myOsg);
@@ -55,7 +60,7 @@ public:
 	void setDirty();
 	
 	//setup
-	static myOsgVolume* createAndInitialize(std::string filename, float alpha = 0.02, float fx=0, float fy=0, float fz=0);
+	static myOsgVolume* createAndInitialize(std::string filename, float alpha = 0.02, float fx=1, float fy=1, float fz=1);
 	//virtual void update(const UpdateContext&context);
 
 private:
