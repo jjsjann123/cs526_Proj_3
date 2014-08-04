@@ -5,22 +5,32 @@ from cyclops import *
 from omegaToolkit import *
 
 import sys	
-sys.path.append('d:\\omegalib\\app\\volume\\debug')
+#sys.path.append('d:\\omegalib\\app\\volume\\debug')
+sys.path.append('C:\\AJ\\CS526\\volume\\debug')
 
 import tomography
 import myvolume
 
-dataDir = "d:\\omegalib\\data\\bmp\\"
+#dataDir = "d:\\omegalib\\data\\bmp\\"
+dataDir = "c:\\AJ\\CS526\\data\\bmp\\"
 
 multiples = tomography.tomography(dataDir)
 
 volume = myvolume.myOsgVolume.createAndInitialize( dataDir + "*", 0.02, 1, 1, 15)
-volume.setPosition(0,0,-600)
+volume.setPosition(0,0,-900)
 volume.activateEffect(3)
 
 cam = getDefaultCamera()
 cam.setControllerEnabled(False)
 cam.setNearFarZ(100,3000)
+
+
+freeFly = False
+wandPos = None
+wandOrientation = None
+anchorPos = None
+anchorOrientation = None
+scale = 1.0
 
 flagZoomIn = False
 flagZoomOut = False
@@ -65,7 +75,15 @@ def onEvent():
 	global flagRotateUpDown
 	global flagRotateLeftRight
 	global menuShow
-
+	
+	global freeFly
+	global wandPos
+	global wandOrientation
+	global anchorPos
+	global anchorOrientation
+	global volume
+	global scale
+	
 	e = getEvent()
 	type = e.getServiceType()
 	if(type == ServiceType.Pointer or type == ServiceType.Wand or type == ServiceType.Keyboard):
@@ -138,8 +156,29 @@ def onEvent():
 			if(e.isButtonDown(quitButton) and menuShow):
 				appMenu.hide()
 				menuShow = False
-			e.setProcessed()
-
+				
+			
+			if(e.isButtonDown(pick)):
+				freeFly = True
+				anchorPos = e.getPosition()
+				anchorOrientation = e.getOrientation()
+				print anchorPos
+				print anchorOrientation
+			if(e.isButtonUp(pick)):
+				freeFly = False
+				wandPos = None
+				anchorPos = None
+			if(freeFly):
+				wandPos = e.getPosition()
+				wandOrientation = e.getOrientation()
+				x = wandPos.x - anchorPos.x
+				y = wandPos.y - anchorPos.y
+				z = wandPos.z - anchorPos.z
+				volume.changeScaleClipping( scale * float(x), scale * float(y), 0)
+				#box.translate( float(x)*scale, float(y)*scale, float(z)*scale, Space.World)
+				#box.setOrientation( box.getOrientation() * scene.getOrientation().conjugated() * anchorOrientation.conjugated() * wandOrientation * scene.getOrientation() )
+				anchorPos = wandPos
+				
 			if(e.isButtonDown( forward)):
 				flagZoomIn = True
 			if(e.isButtonDown( down )):
@@ -168,9 +207,25 @@ def onEvent():
 				appMenu.show()
 				appMenu.placeOnWand(e)
 				menuShow = True
-			if(e.isButtonDown(quitButton) and menuShow):
-				appMenu.hide()
-				menuShow = False
+			if(e.isButtonDown(quitButton)):
+				if (menuShow):
+					appMenu.hide()
+					menuShow = False
+				else:
+					freeFly = True
+					anchorPos = e.getPosition()
+			if(e.isButtonUp(quitButton)):
+				freeFly = False
+				wandPos = None
+				anchorPos = None
+			if(freeFly):
+				wandPos = e.getPosition()
+				x = wandPos.x - anchorPos.x
+				y = wandPos.y - anchorPos.y
+				print x, "X" , y
+				volume.changeScaleClipping( scale * float(x)/1000, scale * float(y)/1000, 0)
+				anchorPos = wandPos	
+			
 			#e.setProcessed()
 
 setEventFunction(onEvent)

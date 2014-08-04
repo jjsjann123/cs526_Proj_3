@@ -111,4 +111,4 @@ class tomography(Container):
 			tomography.loadImageToContainer(index, img, containerList, wf)
 			index+=1
 		
-test = tomography('../data/bmp/')
+#test = tomography('../data/bmp/')
